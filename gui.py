@@ -1,6 +1,8 @@
 import tkinter as tk
-from tkinter import messagebox, ttk  # Import ttk for Treeview
+from tkinter import messagebox, ttk
 import sqlite3
+from tkcalendar import Calendar
+from main import schedule_tasks, WORK_HOURS
 
 def add_task(title, description, priority, deadline, duration, project):
     conn = sqlite3.connect('tasks.db')
@@ -19,6 +21,27 @@ def view_tasks():
     tasks = cur.fetchall()
     conn.close()
     return tasks
+
+def update_task(task_id, title, description, priority, deadline, duration, project, completed):
+    conn = sqlite3.connect('tasks.db')
+    cur = conn.cursor()
+    cur.execute('''
+        UPDATE tasks
+        SET title = ?, description = ?, priority = ?, deadline = ?, duration = ?, project = ?, completed = ?
+        WHERE id = ?
+    ''', (title, description, priority, deadline, duration, project, completed, task_id))
+    conn.commit()
+    conn.close()
+
+def delete_task(task_id):
+    conn = sqlite3.connect('tasks.db')
+    cur = conn.cursor()
+    cur.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
+    conn.commit()
+    conn.close()
+
+# Importing the schedule_tasks function from main.py
+from main import schedule_tasks
 
 def add_task_gui():
     def submit():
@@ -61,12 +84,10 @@ def add_task_gui():
 
     tk.Button(add_task_window, text="Submit", command=submit).grid(row=6, columnspan=2)
 
-# Function to display tasks in the GUI
 def view_tasks_gui():
     view_tasks_window = tk.Toplevel(root)
     view_tasks_window.title("View Tasks")
 
-    # Create a Treeview widget to display tasks
     tree = ttk.Treeview(view_tasks_window, columns=('ID', 'Title', 'Description', 'Priority', 'Deadline', 'Duration', 'Project', 'Completed'), show='headings')
     tree.heading('ID', text='ID')
     tree.heading('Title', text='Title')
@@ -77,33 +98,12 @@ def view_tasks_gui():
     tree.heading('Project', text='Project')
     tree.heading('Completed', text='Completed')
 
-    tasks = view_tasks()
-    for task in tasks:
+    sorted_tasks = schedule_tasks()  # Use the scheduling algorithm to get sorted tasks
+    for task in sorted_tasks:
         tree.insert('', tk.END, values=task)
 
     tree.pack(expand=True, fill=tk.BOTH)
 
-# Function to update a task in the database
-def update_task(task_id, title, description, priority, deadline, duration, project, completed):
-    conn = sqlite3.connect('tasks.db')
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE tasks
-        SET title = ?, description = ?, priority = ?, deadline = ?, duration = ?, project = ?, completed = ?
-        WHERE id = ?
-    ''', (title, description, priority, deadline, duration, project, completed, task_id))
-    conn.commit()
-    conn.close()
-
-# Function to delete a task from the database
-def delete_task(task_id):
-    conn = sqlite3.connect('tasks.db')
-    cur = conn.cursor()
-    cur.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
-    conn.commit()
-    conn.close()
-
-# Function to create the task update GUI
 def update_task_gui():
     def submit():
         task_id = int(task_id_entry.get())
@@ -155,7 +155,6 @@ def update_task_gui():
 
     tk.Button(update_task_window, text="Submit", command=submit).grid(row=8, columnspan=2)
 
-# Function to create the task deletion GUI
 def delete_task_gui():
     def submit():
         task_id = int(task_id_entry.get())
@@ -172,6 +171,47 @@ def delete_task_gui():
 
     tk.Button(delete_task_window, text="Submit", command=submit).grid(row=1, columnspan=2)
 
+def view_calendar_gui():
+    def get_task_info(date):
+        date_tasks = [task for task in sorted_tasks if task[4] == date]  # Filter tasks by selected date
+        task_info = "\n".join([f"Title: {task[1]}, Priority: {task[3]}" for task in date_tasks])
+        task_info_label.config(text=task_info if task_info else "No tasks for this date")
+
+    sorted_tasks = schedule_tasks()  # Get sorted tasks
+
+    view_calendar_window = tk.Toplevel(root)
+    view_calendar_window.title("Task Calendar")
+
+    cal = Calendar(view_calendar_window, selectmode='day')
+    cal.pack(pady=20)
+
+    task_info_label = tk.Label(view_calendar_window, text="", justify=tk.LEFT)
+    task_info_label.pack(pady=10)
+
+    view_button = tk.Button(view_calendar_window, text="View Tasks", command=lambda: get_task_info(cal.get_date()))
+    view_button.pack(pady=10)
+
+def view_hourly_calendar_gui():
+    def get_task_info(hour):
+        hour_tasks = [task[1] for task in scheduled_tasks if task[0] == hour]
+        task_info = "\n".join([f"{task[1]}, Priority: {task[3]}, Duration: {task[5]} hrs" for task in hour_tasks])
+        task_info_label.config(text=task_info if task_info else "No tasks for this hour")
+
+    scheduled_tasks = schedule_tasks()  # Get scheduled tasks
+
+    view_hourly_calendar_window = tk.Toplevel(root)
+    view_hourly_calendar_window.title("Hourly Task Calendar")
+
+    for hour in WORK_HOURS:
+        hour_label = tk.Label(view_hourly_calendar_window, text=f"{hour}:00")
+        hour_label.grid(row=hour - WORK_HOURS[0], column=0, padx=10, pady=5)
+
+        task_info_label = tk.Label(view_hourly_calendar_window, text="", justify=tk.LEFT)
+        task_info_label.grid(row=hour - WORK_HOURS[0], column=1, padx=10, pady=5)
+
+        view_button = tk.Button(view_hourly_calendar_window, text="View Tasks", command=lambda h=hour: get_task_info(h))
+        view_button.grid(row=hour - WORK_HOURS[0], column=2, padx=10, pady=5)
+
 root = tk.Tk()
 root.title("Task Scheduling System")
 
@@ -179,5 +219,8 @@ tk.Button(root, text="Add Task", command=add_task_gui).pack()
 tk.Button(root, text="View Tasks", command=view_tasks_gui).pack()
 tk.Button(root, text="Update Task", command=update_task_gui).pack()
 tk.Button(root, text="Delete Task", command=delete_task_gui).pack()
+tk.Button(root, text="View Calendar", command=view_calendar_gui).pack()
+tk.Button(root, text="View Hourly Calendar", command=view_hourly_calendar_gui).pack()
+
 
 root.mainloop()
