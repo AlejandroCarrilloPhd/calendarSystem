@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 import sqlite3
+from tkcalendar import Calendar
 
 def add_task(title, description, priority, deadline, duration, project):
     conn = sqlite3.connect('tasks.db')
@@ -169,6 +170,27 @@ def delete_task_gui():
 
     tk.Button(delete_task_window, text="Submit", command=submit).grid(row=1, columnspan=2)
 
+def view_calendar_gui():
+    def get_task_info(date):
+        date_tasks = [task for task in sorted_tasks if task[4] == date]  # Filter tasks by selected date
+        task_info = "\n".join([f"Title: {task[1]}, Priority: {task[3]}" for task in date_tasks])
+        task_info_label.config(text=task_info if task_info else "No tasks for this date")
+
+    sorted_tasks = schedule_tasks()  # Get sorted tasks
+
+    view_calendar_window = tk.Toplevel(root)
+    view_calendar_window.title("Task Calendar")
+
+    cal = Calendar(view_calendar_window, selectmode='day')
+    cal.pack(pady=20)
+
+    task_info_label = tk.Label(view_calendar_window, text="", justify=tk.LEFT)
+    task_info_label.pack(pady=10)
+
+    view_button = tk.Button(view_calendar_window, text="View Tasks", command=lambda: get_task_info(cal.get_date()))
+    view_button.pack(pady=10)
+
+
 root = tk.Tk()
 root.title("Task Scheduling System")
 
@@ -176,5 +198,6 @@ tk.Button(root, text="Add Task", command=add_task_gui).pack()
 tk.Button(root, text="View Tasks", command=view_tasks_gui).pack()
 tk.Button(root, text="Update Task", command=update_task_gui).pack()
 tk.Button(root, text="Delete Task", command=delete_task_gui).pack()
+tk.Button(root, text="View Calendar", command=view_calendar_gui).pack()
 
 root.mainloop()
