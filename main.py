@@ -87,6 +87,12 @@ def main():
         else:
             print("Invalid choice. Please try again.")
 
+def schedule_tasks():
+    tasks = view_tasks()  # Retrieve all tasks
+    # Sort tasks by priority (assuming 'High' > 'Medium' > 'Low')
+    priority_order = {'High': 1, 'Medium': 2, 'Low': 3}
+    sorted_tasks = sorted(tasks, key=lambda x: priority_order[x[3]])
+    return sorted_tasks
 
 if __name__ == "__main__":
     main()
