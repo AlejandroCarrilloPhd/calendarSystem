@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import sqlite3
 from tkcalendar import Calendar
-from main import schedule_tasks, WORK_HOURS
+from main import schedule_tasks, WORK_HOURS, DAYS_OF_WEEK
 
 def add_task(title, description, priority, deadline, duration, project):
     conn = sqlite3.connect('tasks.db')
@@ -212,6 +212,28 @@ def view_hourly_calendar_gui():
         view_button = tk.Button(view_hourly_calendar_window, text="View Tasks", command=lambda h=hour: get_task_info(h))
         view_button.grid(row=hour - WORK_HOURS[0], column=2, padx=10, pady=5)
 
+def view_weekly_hourly_calendar_gui():
+    scheduled_tasks = schedule_tasks()  # Get scheduled tasks
+
+    view_weekly_hourly_calendar_window = tk.Toplevel(root)
+    view_weekly_hourly_calendar_window.title("Weekly Hourly Task Calendar")
+
+    # Create headers for days of the week
+    for col, day in enumerate(DAYS_OF_WEEK):
+        day_label = tk.Label(view_weekly_hourly_calendar_window, text=day)
+        day_label.grid(row=0, column=col + 1, padx=10, pady=5)
+
+    # Create rows for each hour
+    for row, hour in enumerate(WORK_HOURS):
+        hour_label = tk.Label(view_weekly_hourly_calendar_window, text=f"{hour % 12 or 12} {'AM' if hour < 12 else 'PM'}")
+        hour_label.grid(row=row + 1, column=0, padx=10, pady=5)
+
+        for col, day in enumerate(DAYS_OF_WEEK):
+            hour_tasks = [task[1] for task in scheduled_tasks[day] if task[0] == hour]
+            task_info = "\n".join([f"{task[1]}, Priority: {task[3]}" for task in hour_tasks])
+            task_info_label = tk.Label(view_weekly_hourly_calendar_window, text=task_info if task_info else "No tasks", justify=tk.LEFT)
+            task_info_label.grid(row=row + 1, column=col + 1, padx=10, pady=5)
+
 root = tk.Tk()
 root.title("Task Scheduling System")
 
@@ -221,6 +243,7 @@ tk.Button(root, text="Update Task", command=update_task_gui).pack()
 tk.Button(root, text="Delete Task", command=delete_task_gui).pack()
 tk.Button(root, text="View Calendar", command=view_calendar_gui).pack()
 tk.Button(root, text="View Hourly Calendar", command=view_hourly_calendar_gui).pack()
+tk.Button(root, text="View Weekly Hourly Calendar", command=view_weekly_hourly_calendar_gui).pack()
 
 
 root.mainloop()

@@ -87,8 +87,9 @@ def main():
         else:
             print("Invalid choice. Please try again.")
 
-# Define work hours (e.g., from 9 AM to 5 PM)
+# Define work hours (e.g., from 9 AM to 5 PM) and days of the week
 WORK_HOURS = list(range(9, 18))  # 9 AM to 5 PM
+DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 def schedule_tasks():
     tasks = view_tasks()
@@ -96,18 +97,22 @@ def schedule_tasks():
     priority_order = {'High': 1, 'Medium': 2, 'Low': 3}
     sorted_tasks = sorted(tasks, key=lambda x: priority_order[x[3]])
 
-    # Schedule tasks within work hours
-    scheduled_tasks = []
+    # Schedule tasks within work hours for each day of the week
+    scheduled_tasks = {day: [] for day in DAYS_OF_WEEK}
+    current_day_index = 0
     current_hour = WORK_HOURS[0]
 
     for task in sorted_tasks:
         duration = task[5]
-        while duration > 0 and current_hour in WORK_HOURS:
-            scheduled_tasks.append((current_hour, task))
-            duration -= 1
-            current_hour += 1
-            if current_hour not in WORK_HOURS:
-                current_hour = WORK_HOURS[0]  # Reset to start of work hours for next day
+        while duration > 0:
+            day = DAYS_OF_WEEK[current_day_index]
+            if current_hour in WORK_HOURS:
+                scheduled_tasks[day].append((current_hour, task))
+                duration -= 1
+                current_hour += 1
+            else:
+                current_hour = WORK_HOURS[0]  # Reset to start of work hours for the next day
+                current_day_index = (current_day_index + 1) % len(DAYS_OF_WEEK)
 
     return scheduled_tasks
 
