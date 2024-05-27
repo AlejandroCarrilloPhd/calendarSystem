@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import sqlite3
 from tkcalendar import Calendar
+from main import schedule_tasks, WORK_HOURS
 
 def add_task(title, description, priority, deadline, duration, project):
     conn = sqlite3.connect('tasks.db')
@@ -190,6 +191,26 @@ def view_calendar_gui():
     view_button = tk.Button(view_calendar_window, text="View Tasks", command=lambda: get_task_info(cal.get_date()))
     view_button.pack(pady=10)
 
+def view_hourly_calendar_gui():
+    def get_task_info(hour):
+        hour_tasks = [task[1] for task in scheduled_tasks if task[0] == hour]
+        task_info = "\n".join([f"{task[1]}, Priority: {task[3]}, Duration: {task[5]} hrs" for task in hour_tasks])
+        task_info_label.config(text=task_info if task_info else "No tasks for this hour")
+
+    scheduled_tasks = schedule_tasks()  # Get scheduled tasks
+
+    view_hourly_calendar_window = tk.Toplevel(root)
+    view_hourly_calendar_window.title("Hourly Task Calendar")
+
+    for hour in WORK_HOURS:
+        hour_label = tk.Label(view_hourly_calendar_window, text=f"{hour}:00")
+        hour_label.grid(row=hour - WORK_HOURS[0], column=0, padx=10, pady=5)
+
+        task_info_label = tk.Label(view_hourly_calendar_window, text="", justify=tk.LEFT)
+        task_info_label.grid(row=hour - WORK_HOURS[0], column=1, padx=10, pady=5)
+
+        view_button = tk.Button(view_hourly_calendar_window, text="View Tasks", command=lambda h=hour: get_task_info(h))
+        view_button.grid(row=hour - WORK_HOURS[0], column=2, padx=10, pady=5)
 
 root = tk.Tk()
 root.title("Task Scheduling System")
@@ -199,5 +220,7 @@ tk.Button(root, text="View Tasks", command=view_tasks_gui).pack()
 tk.Button(root, text="Update Task", command=update_task_gui).pack()
 tk.Button(root, text="Delete Task", command=delete_task_gui).pack()
 tk.Button(root, text="View Calendar", command=view_calendar_gui).pack()
+tk.Button(root, text="View Hourly Calendar", command=view_hourly_calendar_gui).pack()
+
 
 root.mainloop()

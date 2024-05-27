@@ -87,12 +87,29 @@ def main():
         else:
             print("Invalid choice. Please try again.")
 
+# Define work hours (e.g., from 9 AM to 5 PM)
+WORK_HOURS = list(range(9, 18))  # 9 AM to 5 PM
+
 def schedule_tasks():
-    tasks = view_tasks()  # Retrieve all tasks
+    tasks = view_tasks()
     # Sort tasks by priority (assuming 'High' > 'Medium' > 'Low')
     priority_order = {'High': 1, 'Medium': 2, 'Low': 3}
     sorted_tasks = sorted(tasks, key=lambda x: priority_order[x[3]])
-    return sorted_tasks
+
+    # Schedule tasks within work hours
+    scheduled_tasks = []
+    current_hour = WORK_HOURS[0]
+
+    for task in sorted_tasks:
+        duration = task[5]
+        while duration > 0 and current_hour in WORK_HOURS:
+            scheduled_tasks.append((current_hour, task))
+            duration -= 1
+            current_hour += 1
+            if current_hour not in WORK_HOURS:
+                current_hour = WORK_HOURS[0]  # Reset to start of work hours for next day
+
+    return scheduled_tasks
 
 if __name__ == "__main__":
     main()
