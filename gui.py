@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, ttk  # Import ttk for Treeview
+from tkinter import messagebox, ttk
 import sqlite3
 
 def add_task(title, description, priority, deadline, duration, project):
@@ -19,6 +19,27 @@ def view_tasks():
     tasks = cur.fetchall()
     conn.close()
     return tasks
+
+def update_task(task_id, title, description, priority, deadline, duration, project, completed):
+    conn = sqlite3.connect('tasks.db')
+    cur = conn.cursor()
+    cur.execute('''
+        UPDATE tasks
+        SET title = ?, description = ?, priority = ?, deadline = ?, duration = ?, project = ?, completed = ?
+        WHERE id = ?
+    ''', (title, description, priority, deadline, duration, project, completed, task_id))
+    conn.commit()
+    conn.close()
+
+def delete_task(task_id):
+    conn = sqlite3.connect('tasks.db')
+    cur = conn.cursor()
+    cur.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
+    conn.commit()
+    conn.close()
+
+# Importing the schedule_tasks function from main.py
+from main import schedule_tasks
 
 def add_task_gui():
     def submit():
@@ -61,12 +82,10 @@ def add_task_gui():
 
     tk.Button(add_task_window, text="Submit", command=submit).grid(row=6, columnspan=2)
 
-# Function to display tasks in the GUI
 def view_tasks_gui():
     view_tasks_window = tk.Toplevel(root)
     view_tasks_window.title("View Tasks")
 
-    # Create a Treeview widget to display tasks
     tree = ttk.Treeview(view_tasks_window, columns=('ID', 'Title', 'Description', 'Priority', 'Deadline', 'Duration', 'Project', 'Completed'), show='headings')
     tree.heading('ID', text='ID')
     tree.heading('Title', text='Title')
@@ -77,33 +96,12 @@ def view_tasks_gui():
     tree.heading('Project', text='Project')
     tree.heading('Completed', text='Completed')
 
-    tasks = view_tasks()
-    for task in tasks:
+    sorted_tasks = schedule_tasks()  # Use the scheduling algorithm to get sorted tasks
+    for task in sorted_tasks:
         tree.insert('', tk.END, values=task)
 
     tree.pack(expand=True, fill=tk.BOTH)
 
-# Function to update a task in the database
-def update_task(task_id, title, description, priority, deadline, duration, project, completed):
-    conn = sqlite3.connect('tasks.db')
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE tasks
-        SET title = ?, description = ?, priority = ?, deadline = ?, duration = ?, project = ?, completed = ?
-        WHERE id = ?
-    ''', (title, description, priority, deadline, duration, project, completed, task_id))
-    conn.commit()
-    conn.close()
-
-# Function to delete a task from the database
-def delete_task(task_id):
-    conn = sqlite3.connect('tasks.db')
-    cur = conn.cursor()
-    cur.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
-    conn.commit()
-    conn.close()
-
-# Function to create the task update GUI
 def update_task_gui():
     def submit():
         task_id = int(task_id_entry.get())
@@ -155,7 +153,6 @@ def update_task_gui():
 
     tk.Button(update_task_window, text="Submit", command=submit).grid(row=8, columnspan=2)
 
-# Function to create the task deletion GUI
 def delete_task_gui():
     def submit():
         task_id = int(task_id_entry.get())
